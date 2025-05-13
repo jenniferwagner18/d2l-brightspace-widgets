@@ -17,7 +17,7 @@ Simple checks if certain materials have already been created in and/or copied in
 
 ## Download Posts Widget
 
-Simple way to download all discussion posts in the course as a CSV file, including posts that have been deleted. Just click the button.
+Simple way to download all discussion posts in the course as a CSV file. Just click the button.
 
 ![Download Posts widget](https://jenniferlynnwagner.com/img/widgets/posts-widget.png)
 
