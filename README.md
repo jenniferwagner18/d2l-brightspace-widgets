@@ -25,6 +25,8 @@ Simple way to download all discussion posts in the course as a CSV file. Just cl
 
 Upload the .js files to Public Files or Manage Files within a course (edit paths in code where necessary). Go to Course Admin, Widgets, and Create Widget in your D2L course. Check the box to Render in iFrame before pasting in the HTML code for the content of the widget in the source code editor. Add release conditions so that only faculty and staff roles at your institution can see the widget. Once the widget is created, add it to your active homepage.
 
+Alternatively, you can upload the HTML files directly to Content rather than creating a custom homepage widget. However, unlike widgets, you will not be able to copy these pages using Course Admin -> Import / Export / Copy Components. The code uses a replace string for the OrgUnitID which will get replaced by the actual ID number of the first course when copying HTML pages in Content.
+
 All the endpoints can be found at the Brightspace API reference website: https://docs.valence.desire2learn.com/reference.html
 
 *The creation of the Course Reminders widget was inspired by the University of Groningen's Course Info widget: https://github.com/rijksuniversiteit-groningen/BrightspaceWidgets*
