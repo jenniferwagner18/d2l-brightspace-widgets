@@ -1,5 +1,5 @@
-const flattenedResults = [];
-    async function fetchAndPrepareData() {
+const allPosts = [];
+async function fetchPosts() {
       try {
         const forums = await fetch('/d2l/api/le/1.75/'+ window.orgUnitId + '/discussions/forums/')
         .then(res => res.json());
@@ -23,7 +23,7 @@ const flattenedResults = [];
             if (!Array.isArray(posts)) continue;
 
             posts.forEach(post => {
-              flattenedResults.push({
+              allPosts.push({
                 forumId,
                 forumName,
                 topicId,
@@ -44,14 +44,14 @@ const flattenedResults = [];
             });
           }
         }
-
-        downloadCSV(flattenedResults, 'discussion_posts_' + window.orgUnitId + '.csv');
+        return allPosts;
       } catch (error) {
         console.error('Error fetching forum structure:', error);
+        return [];
       }
     }
 
-    function downloadCSV(data, filename) {
+function downloadCSV(data, filename) {
       if (!data.length) {
         console.warn('No data to export');
         return;
@@ -72,34 +72,43 @@ const flattenedResults = [];
       const csvContent = csvRows.join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       URL.revokeObjectURL(url);
     }
 
- window.onload = () => {
-  const btn = document.createElement('button');
-  btn.textContent = 'Download CSV';
-  btn.id = 'downloadBtn';
-  btn.onclick = async () => {
-    btn.disabled = true;
-    const originalText = btn.textContent;
-    btn.textContent = 'Generating file...';
+window.onload = () => {
+    const btn = document.createElement('button');
+    btn.textContent = 'Download CSV';
+    const message = document.createElement('div');
+    message.style.color = '#8B0000';
+    document.body.appendChild(btn);
+    document.body.appendChild(message);
 
+    btn.onclick = async () => {
+        btn.disabled = true;
+        btn.textContent = 'Generating file...';
+        
     try {
-      await fetchAndPrepareData();
+      const coursePosts = await fetchPosts();
+
+      if (coursePosts.length === 0) {
+        message.textContent = 'No posts exist in course!';
+      } else {
+        downloadCSV(coursePosts, 'discussion_posts_' + window.orgUnitId + '.csv');
+        message.textContent = 'Download successful!';
+        message.style.color = 'green';
+      }
     } catch (error) {
       console.error('Error during file generation:', error);
+      message.textContent = 'Error generating file. Please try again.';
     } finally {
+      btn.textContent = 'Download CSV';
       btn.disabled = false;
-      btn.textContent = originalText;
     }
   };
-  document.body.appendChild(btn);
 };
