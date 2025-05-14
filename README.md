@@ -11,13 +11,13 @@ Reminders that help to ensure the course is ready for students before the semest
 
 ## Course Materials Widget
 
-Simple checks if certain materials have already been created in and/or copied into the course, such as Announcements, Assignments, Content items, Discussion forums, etc.
+Simple checks if certain materials have already been created in and/or copied into the course, such as Announcements, Assignments, Content items, Discussion forums, etc. Syllabus in Content checks for the word syllabus in the title of items and modules.
 
 ![Course Materials widget](https://jenniferlynnwagner.com/img/widgets/materials-widget.png)
 
 ## Download Posts Widget
 
-Simple way to download all discussion posts in the course as a CSV file. Just click the button.
+Simple way to download all discussion posts in the course as a CSV file. Just click the button. Feedback message will display below the button when download is successful or if there are no posts in the course.
 
 ![Download Posts widget](https://jenniferlynnwagner.com/img/widgets/posts-widget.png)
 
