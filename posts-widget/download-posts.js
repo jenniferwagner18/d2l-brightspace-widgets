@@ -84,7 +84,7 @@ function downloadCSV(data, filename) {
 window.onload = () => {
     const btn = document.createElement('button');
     btn.textContent = 'Download CSV';
-    const message = document.createElement('div');
+    const message = document.createElement('p');
     message.style.color = '#8B0000';
     document.body.appendChild(btn);
     document.body.appendChild(message);
