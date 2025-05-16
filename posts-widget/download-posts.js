@@ -67,7 +67,7 @@ function downloadCSV(data, filename) {
       data.forEach(row => {
         const values = headers.map(header => {
           let val = row[header] ?? '';
-          if (Array.isArray(val)) val = val.join(' | ');
+          if (Array.isArray(val)) val = val.join(', ');
           return `"${String(val).replace(/"/g, '""')}"`;
         });
         csvRows.push(values.join(','));
