@@ -1,39 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- update script src to where you saved JavaScript file, either in Public Files or Manage Files in a course -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+    .blue, .red, .green, .orange { font-size: 20px; }
+    .blue { color: #246EBD }
+    .red { color: #DC0E2D }
+    .green { color: #2C8E1F }
+    .orange { color: #D66A05 }
+</style>
 <script src="/shared/reminders-widget/course-reminders.js"></script>
 <script>window.orgUnitId={OrgUnitId}</script>
-<link rel="stylesheet" href="https://s.brightspace.com/lib/fonts/0.6.1/fonts.css">
 </head>
-<body style="font-family: 'Lato', sans-serif;color: #202122;"><h1>Course Reminders</h1>
-<p><em>This widget is only visible to faculty and staff.</em></p>
-<h2><strong>Course Status</strong></h2>
-<div id="courseStatus"><img id="courseStatusImg" width="16"> <span id="courseActiveStatus">Checking course status and dates...</span> 
-  <!-- replace # in all href's to your institution's help pages and update img src paths as needed -->
-  <a href="#" target="_blank" rel="noopener"><img src="/shared/reminders-widget/help.svg" width="16" alt="Course status and dates help" title="Help on how to make your course active or inactive and set dates"></a></div>
-<div id="courseStart"><br>Start Date: <span id="startDate">Checking for start date...</span></div>
-<div id="courseEnd">End Date: <span id="endDate">Checking for end date...</span></div>
-<p></p>
-<h2><strong>Course Syllabus</strong></h2>
-<div id="syllabusStatus"><img id="syllabusImg" width="16"> <span id="syllabusCheck">Checking for syllabus in Content...</span> 
-  <a href="#" target="_blank" rel="noopener"><img src="/shared/reminders-widget/help.svg" width="16" alt="Syllabus creation help" title="Help on making an accessible syllabus"></a>
-<p></p>
-<h2><strong>Module Descriptions</strong></h2>
-<div id="descStatus"><img id="descImg" width="16"> <span id="descCheck">Checking if module descriptions are too long...</span> 
-  <a href="#" target="_blank" rel="noopener"><img src="/shared/reminders-widget/help.svg" width="16" alt="Course material creation help" title="Help on making accessible course content"></a>
-<p></p>
-<h2><strong>Video Files</strong></h2>
-<div id="videoStatus"><img id="videoImg" width="16"> <span id="videoCheck">Checking for .mp4 files in Manage Files...</span> 
-  <a href="#" target="_blank" rel="noopener"><img src="/shared/reminders-widget/help.svg" width="16" alt="Video Help" title="Help on adding videos to D2L"></a>
-<p></p>
-<h2><strong>Grade Schemes</strong></h2>
-<div id="gpaStatus"><img id="gpaImg" width="16"> <span id="gpaCheck">Checking for grade schemes with GPAs...</span> 
-  <a href="#" target="_blank" rel="noopener"><img src="/shared/reminders-widget/help.svg" width="16" alt="GPA grade scheme help" title="Help on creating a grade scheme with GPAs"></a>
-<p></p>
-<h2><strong>Course Code</strong></h2>
-<div>If you require assistance, please submit a <a href="#" target="_blank">service ticket</a> and include the course code: {OrgUnitCode}</div>
-</div>
-</div>
-</div>
-</div></body></html>
+<body><p><em>This widget is only visible to course administrators, editors, and assistants.</em></p>
+<h2>Course Status</h2>
+<p><i id="statusImg" aria-hidden="true"></i> <span id="statusCheck">Checking course status and dates...</span> <a href="#" target="_blank" rel="noopener"><i class="fa fa-question-circle blue" alt="Course status and dates help" title="Help on how to make your course active or inactive and set dates"></i></a> <br><br>Start Date: <span id="startDate">Checking for start date...</span> <br>End Date: <span id="endDate">Checking for end date...</span></p>
+<h2>Course Syllabus</h2>
+<p><i id="syllabusImg" aria-hidden="true"></i> <span id="syllabusCheck">Checking for syllabus in Content...</span> <a href="#" target="_blank" rel="noopener"><i class="fa fa-question-circle blue" alt="Syllabus creation help" title="Help on making an accessible syllabus"></i></a></p>
+<h2>Module Descriptions</h2>
+<p><i id="descImg" aria-hidden="true"></i> <span id="descCheck">Checking if module descriptions are too long...</span> <a href="#" target="_blank" rel="noopener"><i class="fa fa-question-circle blue" alt="Course material creation help" title="Help on making accessible course content"></i></a></p>
+<h2>Video Files</h2>
+<p><i id="videoImg" aria-hidden="true"></i> <span id="videoCheck">Checking for .mp4 files in Manage Files...</span> <a href="#" target="_blank" rel="noopener"><i class="fa fa-question-circle blue" alt="Video Help" title="Help on adding videos to D2L"></i></a></p>
+<h2>Grade Schemes</h2>
+<p><i id="gpaImg" aria-hidden="true"></i> <span id="gpaCheck">Checking for grade schemes with GPAs...</span> <a href="#" target="_blank" rel="noopener"><i class="fa fa-question-circle blue" alt="GPA grade scheme help" title="Help on creating a grade scheme with GPAs"></i></a></p>
+<h2>Course Code</h2>
+<div>If you require assistance, please submit a <a href="#" target="_blank" rel="noopener">service ticket</a> and include the course code: {OrgUnitCode}</div>
+</body></html>
