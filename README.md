@@ -6,7 +6,7 @@ Custom widgets using API calls in JavaScript to help instructors with designing/
 
 Reminders that help to ensure the course is ready for students before the semester begins. The widget displays important information about the course in one location with suggested actions for improvement. The code checks for course status, start/end dates, syllabus in Content, long descriptions in Content, video files uploaded to Manage Files, and grade schemes that include a 4.0 GPA scale. 
 
-<img src="https://jenniferlynnwagner.com/img/widgets/reminders-widget.png" width="400" alt="Course Reminders widget">
+
 
 
 ## Course Materials Widget
