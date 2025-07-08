@@ -29,7 +29,7 @@ window.onload = () => {
     
     checkContent();
     
-    // check for any announcements, assignment dropboxes, quizzes, discussion forums, rubrics, and grade items
+    // check for any announcements, assignment dropboxes, quizzes, discussion forums, grade items, and files
     
         const announcements = '/d2l/api/le/1.75/'+ window.orgUnitId + '/news/'
         const announceElem = document.getElementById('announceCheck');
