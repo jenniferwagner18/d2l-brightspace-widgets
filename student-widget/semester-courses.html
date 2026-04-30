@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><link rel="stylesheet" href="https://s.brightspace.com/lib/fonts/0.6.1/fonts.css"></head>
+<body>
+<div id="student-widget">
+  <div id="heading"></div>
+  <div id="course-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em;">
+    <p>Loading courses...</p>
+  </div>
+</div>
+<p style="font-size: 14px; padding-top: 20px;"><em>If you do not see all of this semester's courses on the first day of classes, please contact your instructors. The My Courses widget below includes all of your open and closed D2L courses, as well as start and end dates.</em></p>
+
+<script>
+(async () => {
+  const lp_version = "1.49";
+  const widget = document.getElementById("student-widget");
+  const heading = document.getElementById("heading");
+  const grid = document.getElementById("course-grid");
+
+  // Semester start dates
+  const semesterStartDates = {
+    2026: { SS: [1,11], US: [5,11], FS: [8,31] },
+    2027: { SS: [1,19], US: [5,17], FS: [8,20] },
+    2028: { SS: [1,18], US: [5,15], FS: [8,28] },
+    2029: { SS: [1,16], US: [5,14], FS: [8,27] }
+  };
+
+  function getETStartDate(year, monthDay) {
+    const [month, day] = monthDay;
+    return new Date(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).format(new Date(year, month - 1, day, 0, 0, 0))
+    );
+  }
+
+  function getCurrentTermAndNext() {
+    const todayUTC = new Date();
+    let year = todayUTC.getUTCFullYear();
+
+    if (!semesterStartDates[year]) {
+      year = Math.max(...Object.keys(semesterStartDates).map(y => parseInt(y)));
+    }
+
+    const { SS, US, FS } = semesterStartDates[year];
+    const ssStart = getETStartDate(year, SS);
+    const usStart = getETStartDate(year, US);
+    const fsStart = getETStartDate(year, FS);
+    let currentTerm, nextTerm, nextStart;
+
+    if (todayUTC < usStart) {
+      currentTerm = `SS${year.toString().slice(-2)}`;
+      nextTerm = `US${year.toString().slice(-2)}`;
+      nextStart = usStart;
+    } else if (todayUTC < fsStart) {
+      currentTerm = `US${year.toString().slice(-2)}`;
+      nextTerm = `FS${year.toString().slice(-2)}`;
+      nextStart = fsStart;
+    } else {
+      currentTerm = `FS${year.toString().slice(-2)}`;
+      const nextYear = year + 1;
+      const nextSS = semesterStartDates[nextYear] ? getETStartDate(nextYear, semesterStartDates[nextYear].SS) : null;
+      nextTerm = nextYear ? `SS${nextYear.toString().slice(-2)}` : "Next Semester";
+      nextStart = nextSS;
+    }
+
+    return { currentTerm, nextTerm, nextStart };
+  }
+
+function formatLastAccess(dateString) {
+  if (!dateString) return "N/A";
+
+  const date = new Date(dateString);
+  const now = new Date();
+
+  // Normalize both dates to local midnight
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const thatDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = (today - thatDay) / (1000 * 60 * 60 * 24);
+  const dateStr = date.toLocaleDateString()
+  const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  if (diffDays === 0) return `Today at ${timeStr}`;
+  if (diffDays === 1) return `Yesterday at ${timeStr}`;
+  return `${dateStr} at ${timeStr}`;
+}
+
+  try {
+    const res = await fetch(`/d2l/api/lp/${lp_version}/enrollments/myenrollments/?orgUnitTypeId=3`);
+    const data = await res.json();
+
+    // Restrict to Student role in Classlist
+    const allowedRoles = "Student";
+
+    const { currentTerm, nextTerm, nextStart } = getCurrentTermAndNext();
+    const courses = data.Items
+      // Filter by access (active AND between start & end dates) and role in Classlist
+      .filter(e => e.Access.CanAccess && allowedRoles.includes(e.Access.ClasslistRoleName))
+      .map(item => ({
+        name: item.OrgUnit.Name,
+        id: item.OrgUnit.Id,
+        url: item.OrgUnit.HomeUrl,
+        code: item.OrgUnit.Code,
+        lastAccess: item.Access.LastAccessed
+      }))
+        // Filter by course code for current semester
+      .filter(course => (course.code || "").toUpperCase().trim().startsWith(currentTerm))
+        // Display courses in alphabetical order by course name
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+      // Remove Loading courses... message
+      grid.innerHTML = "";
+
+      // Message displayed above or in place of grid of courses
+      if (courses.length > 0) {
+        heading.innerHTML = `<div>Your active and open courses for ${currentTerm}:</div>`;
+        }
+      else {
+        widget.innerHTML = `<div>No active and open courses found for ${currentTerm}. The next semester (${nextTerm}) begins on ${nextStart.toLocaleDateString("en-US", { month:'short', day:'numeric', year:'numeric' })}.</div>`;
+        }
+
+    // Grid of active courses
+    courses.forEach(course => {
+      const card = document.createElement("div");
+      card.style.border = "1px solid #ccc";
+      card.style.borderRadius = "6px";
+      card.style.padding = "0.7em";
+      card.style.background = "#f9f9f9";
+      card.style.display = "flex";
+      card.style.flexDirection = "column";
+      card.style.justifyContent = "space-between";
+      card.style.minHeight = "140px";
+
+      // Course name
+      const title = document.createElement("div");
+      title.style.fontWeight = "bold";
+      title.style.marginBottom = "0.5em";
+      title.textContent = course.name;
+      card.appendChild(title);
+
+      // Last accessed
+      const lastAccessDiv = document.createElement("div");
+      lastAccessDiv.style.fontSize = "0.9em";
+      lastAccessDiv.style.color = "#666";
+      lastAccessDiv.style.marginBottom = "0.5em";
+      lastAccessDiv.textContent = `🗓️ Last accessed: ${formatLastAccess(course.lastAccess)}`;
+      card.appendChild(lastAccessDiv);
+
+      // Links to course tools
+      const linksDiv = document.createElement("div");
+      linksDiv.style.display = "flex";
+      linksDiv.style.flexDirection = "column";
+      linksDiv.style.gap = "0.3em";
+
+      const homepageLink = document.createElement("a");
+      homepageLink.href = `/d2l.msu.edu/d2l/home/${course.id}`;
+      homepageLink.target = "_blank";
+      homepageLink.textContent = "🏠 Homepage";
+      linksDiv.appendChild(homepageLink);
+
+      const contentLink = document.createElement("a");
+      contentLink.href = `/d2l.msu.edu/d2l/le/content/${course.id}/Home`;
+      contentLink.target = "_blank";
+      contentLink.textContent = "📚 Content";
+      linksDiv.appendChild(contentLink);
+
+      const assignmentsLink = document.createElement("a");
+      assignmentsLink.href = `/d2l/lms/dropbox/user/folders_list.d2l?ou=${course.id}`;
+      assignmentsLink.target = "_blank";
+      assignmentsLink.textContent = "📝 Assignments";
+      linksDiv.appendChild(assignmentsLink);
+
+      const gradesLink = document.createElement("a");
+      gradesLink.href = `/d2l/lms/grades/my_grades/main.d2l?ou=${course.id}`;
+      gradesLink.target = "_blank";
+      gradesLink.textContent = "📊 Gradebook";
+      linksDiv.appendChild(gradesLink);
+
+      card.appendChild(linksDiv);
+      grid.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error(err);
+    grid.innerHTML = "<div>Error loading courses.</div>";
+  }
+
+})();
+</script>
+</body></html>
