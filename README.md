@@ -1,27 +1,33 @@
-# Custom Homepage Widgets for D2L Brightspace
+## Custom Homepage Widgets for D2L Brightspace
 
-Custom widgets using API calls in JavaScript to help instructors with designing/reviewing courses and downloading course data.
+Custom widgets using API calls in JavaScript to help instructors with designing/reviewing courses and downloading course data. A widget is also available for students that allows easier and direct access to frequently used tools within each active course.
 
-## Course Reminders Widget
+## Students: Current Semester Courses Widget
+
+This widget is designed for the main D2L homepage rather than an individual course, based on the Student role at the organization level. The widget lists the student's active and open (within the start and end dates) semester's courses with direct links to each course's homepage, content, assignments, and gradebook. Semester start dates need to be updated in the code and the filters for semesters are based on the course code.
+
+Add a custom widget to your organization's D2L homepage and check the box to Render in iFrame before pasting in the HTML code for the content of the widget in the source code editor.
+
+## Instructors: Course Reminders Widget
 
 Reminders that help to ensure the course is ready for students before the semester begins. The widget displays important information about the course in one location with suggested actions for improvement. The code checks for course status, start/end dates, syllabus in Content, long descriptions in Content, video files uploaded to Manage Files, and grade schemes that include a 4.0 GPA scale. [[Watch the video on this widget created for D2L Fusion 2025](https://youtu.be/VpwnxK9M2yw?si=tAR1Qxk7DQL2FMMK).]
 
 <img src="https://jenniferlynnwagner.com/img/widgets/reminders.png" width="400" alt="Course Reminders widget">
 
 
-## Course Materials Widget
+## Instructors: Course Materials Widget
 
 Simple checks if certain materials have already been created in and/or copied into the course, such as Announcements, Assignments, Content items, Discussion forums, etc. Syllabus in Content checks for the word syllabus in the title of items and modules.
 
 ![Course Materials widget](https://jenniferlynnwagner.com/img/widgets/materials.png)
 
-## Download Posts Widget
+## Instructors: Download Posts Widget
 
 Simple way to download all discussion posts in the course as a CSV file. Just click the button. Feedback message will display below the button when download is successful or if there are no posts in the course.
 
 ![Download Posts widget](https://jenniferlynnwagner.com/img/widgets/posts.png)
 
-### How to create custom widgets in D2L:
+### How to create custom instructor widgets in D2L for course homepages:
 
 Upload the .js files to Public Files or Manage Files within a course (edit paths in code where necessary). Go to Course Admin, Widgets, and Create Widget in your D2L course. Check the box to Render in iFrame before pasting in the HTML code for the content of the widget in the source code editor. Add release conditions so that only faculty and staff roles at your institution can see the widget. Once the widget is created, add it to your active homepage.
 
