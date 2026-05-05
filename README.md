@@ -4,7 +4,9 @@ Custom widgets using API calls in JavaScript to help instructors with designing/
 
 ## Students: Current Semester Courses Widget
 
-This widget is designed for the main D2L homepage rather than an individual course, based on the Student role at the organization level. The widget lists the student's active and open (within the start and end dates) semester's courses with direct links to each course's homepage, content, assignments, and gradebook. Semester start dates need to be updated in the code and the filters for semesters are based on the course code.
+This widget is designed for the main D2L homepage rather than an individual course, based on the Student role at the organization level. The widget lists the student's active and open (within the start and end dates) semester's courses with direct links to each course's homepage, content, assignments, and gradebook as well as when the student last accessed the course. Semester start dates need to be updated in the code and the filters for semesters are based on the course code.
+
+<img src="https://jenniferlynnwagner.com/img/widgets/semester-courses.jpg" width="600px" alt="Semester courses widget for student D2L homepage">
 
 Add a custom widget to your organization's D2L homepage and check the box to Render in iFrame before pasting in the HTML code for the content of the widget in the source code editor.
 
