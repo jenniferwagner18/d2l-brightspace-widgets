@@ -1,14 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><link rel="stylesheet" href="https://s.brightspace.com/lib/fonts/0.6.1/fonts.css"></head>
+<head><link rel="stylesheet" href="https://s.brightspace.com/lib/fonts/0.6.1/fonts.css">
+<style>
+  .tablist {
+  margin-bottom: 20px;
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.semester-tab {
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  padding: 10px 10px;
+  font-size: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.semester-tab[aria-selected="true"] {
+  background: #18453b;
+  color: white;
+  border-color: #18453b;
+  font-weight: 600;
+}
+
+.semester-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #006fe6;
+}
+
+</style>
+</head>
 <body>
 <div id="student-widget">
   <div id="heading"></div>
-  <div id="course-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em;">
+  <div id="course-grid" role="tabpanel" aria-live="polite" style="display:grid; grid-template-columns:repeat(3,1fr); gap: 1em;">
     <p>Loading courses...</p>
   </div>
 </div>
-<p style="font-size: 14px; padding-top: 20px;"><em>If you do not see all of this semester's courses on the first day of classes, please contact your instructors. The My Courses widget below includes all of your open and closed D2L courses, as well as start and end dates.</em></p>
+<p style="padding-top: 20px;"><em>Contact your instructors during the first week of the semester if your expected courses are not listed. The My Courses widget below includes all of your upcoming D2L courses as well as start and end dates.</em></p>
 
 <script>
 (async () => {
@@ -17,7 +49,7 @@
   const heading = document.getElementById("heading");
   const grid = document.getElementById("course-grid");
 
-  // Semester start dates
+  // Semester start dates from academic calendar
   const semesterStartDates = {
     2026: { SS: [1,11], US: [5,11], FS: [8,31] },
     2027: { SS: [1,19], US: [5,17], FS: [8,20] },
@@ -74,6 +106,32 @@
     return { currentTerm, nextTerm, nextStart };
   }
 
+function getCurrentAndPreviousTerm() {
+    const { currentTerm, nextTerm, nextStart } = getCurrentTermAndNext();
+
+    const termPrefix = currentTerm.substring(0, 2);
+    const year = parseInt("20" + currentTerm.substring(2));
+
+    let previousTerm;
+
+    if (termPrefix === "US") {
+      previousTerm = `SS${currentTerm.substring(2)}`;
+    }
+    else if (termPrefix === "FS") {
+      previousTerm = `US${currentTerm.substring(2)}`;
+    }
+    else {
+      previousTerm = `FS${(year - 1).toString().slice(-2)}`;
+    }
+
+    return {
+      currentTerm,
+      previousTerm,
+      nextTerm,
+      nextStart
+    };
+  }  
+
 function formatLastAccess(dateString) {
   if (!dateString) return "N/A";
 
@@ -91,44 +149,24 @@ function formatLastAccess(dateString) {
   if (diffDays === 1) return `Yesterday at ${timeStr}`;
   return `${dateStr} at ${timeStr}`;
 }
+  
+function renderCourses(courses, headingText) {
+  const semesterLabel =
+    document.getElementById("semesterLabel");
 
-  try {
-    const res = await fetch(`/d2l/api/lp/${lp_version}/enrollments/myenrollments/?orgUnitTypeId=3`);
-    const data = await res.json();
+  semesterLabel.innerHTML = headingText;
 
-    // Restrict to Student role in Classlist
-    const allowedRoles = "Student";
+    grid.innerHTML = "";
 
-    const { currentTerm, nextTerm, nextStart } = getCurrentTermAndNext();
-    const courses = data.Items
-      // Filter by access (active AND between start & end dates) and role in Classlist
-      .filter(e => e.Access.CanAccess && allowedRoles.includes(e.Access.ClasslistRoleName))
-      .map(item => ({
-        name: item.OrgUnit.Name,
-        id: item.OrgUnit.Id,
-        url: item.OrgUnit.HomeUrl,
-        code: item.OrgUnit.Code,
-        lastAccess: item.Access.LastAccessed
-      }))
-        // Filter by course code for current semester
-      .filter(course => (course.code || "").toUpperCase().trim().startsWith(currentTerm))
-        // Display courses in alphabetical order by course name
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    if (!courses.length) {
+      grid.innerHTML =
+        "<div><strong>No open courses found.</strong></div>";
+      return;
+    }
 
-      // Remove Loading courses... message
-      grid.innerHTML = "";
-
-      // Message displayed above or in place of grid of courses
-      if (courses.length > 0) {
-        heading.innerHTML = `<div>Your active and open courses for ${currentTerm}:</div>`;
-        }
-      else {
-        widget.innerHTML = `<div>No active and open courses found for ${currentTerm}. The next semester (${nextTerm}) begins on ${nextStart.toLocaleDateString("en-US", { month:'short', day:'numeric', year:'numeric' })}.</div>`;
-        }
-
-    // Grid of active courses
-    courses.forEach(course => {
+      courses.forEach(course => {
       const card = document.createElement("div");
+
       card.style.border = "1px solid #ccc";
       card.style.borderRadius = "6px";
       card.style.padding = "0.7em";
@@ -138,54 +176,245 @@ function formatLastAccess(dateString) {
       card.style.justifyContent = "space-between";
       card.style.minHeight = "140px";
 
-      // Course name
       const title = document.createElement("div");
       title.style.fontWeight = "bold";
       title.style.marginBottom = "0.5em";
       title.textContent = course.name;
       card.appendChild(title);
 
-      // Last accessed
       const lastAccessDiv = document.createElement("div");
       lastAccessDiv.style.fontSize = "0.9em";
       lastAccessDiv.style.color = "#666";
       lastAccessDiv.style.marginBottom = "0.5em";
-      lastAccessDiv.textContent = `🗓️ Last accessed: ${formatLastAccess(course.lastAccess)}`;
+      lastAccessDiv.innerHTML = `<span aria-hidden="true">🗓️</span> Last accessed: ${formatLastAccess(course.lastAccess)}`;
       card.appendChild(lastAccessDiv);
 
-      // Links to course tools
       const linksDiv = document.createElement("div");
       linksDiv.style.display = "flex";
       linksDiv.style.flexDirection = "column";
       linksDiv.style.gap = "0.3em";
 
       const homepageLink = document.createElement("a");
-      homepageLink.href = `/d2l.msu.edu/d2l/home/${course.id}`;
+      homepageLink.href = `/d2l/home/${course.id}`;
       homepageLink.target = "_blank";
-      homepageLink.textContent = "🏠 Homepage";
+      const icon2 = document.createElement("span");
+      icon2.setAttribute("aria-hidden", "true");
+      icon2.textContent = "🏠";
+      homepageLink.append(icon2, " Homepage");
       linksDiv.appendChild(homepageLink);
 
       const contentLink = document.createElement("a");
-      contentLink.href = `/d2l.msu.edu/d2l/le/content/${course.id}/Home`;
+      contentLink.href = `/d2l/le/content/${course.id}/Home`;
       contentLink.target = "_blank";
-      contentLink.textContent = "📚 Content";
+      const icon3 = document.createElement("span");
+      icon3.setAttribute("aria-hidden", "true");
+      icon3.textContent = "📚";
+      contentLink.append(icon3, " Content");
       linksDiv.appendChild(contentLink);
 
       const assignmentsLink = document.createElement("a");
       assignmentsLink.href = `/d2l/lms/dropbox/user/folders_list.d2l?ou=${course.id}`;
       assignmentsLink.target = "_blank";
-      assignmentsLink.textContent = "📝 Assignments";
+      const icon4 = document.createElement("span");
+      icon4.setAttribute("aria-hidden", "true");
+      icon4.textContent = "📝";
+      assignmentsLink.append(icon4, " Assignments");
       linksDiv.appendChild(assignmentsLink);
 
       const gradesLink = document.createElement("a");
-      gradesLink.href = `/d2l/lms/grades/my_grades/main.d2l?ou=${course.id}`;
+      gradesLink.href =  `/d2l/lms/grades/my_grades/main.d2l?ou=${course.id}`;
       gradesLink.target = "_blank";
-      gradesLink.textContent = "📊 Gradebook";
+      const icon5 = document.createElement("span");
+      icon5.setAttribute("aria-hidden", "true");
+      icon5.textContent = "📊";
+      gradesLink.append(icon5, " Gradebook");
       linksDiv.appendChild(gradesLink);
 
       card.appendChild(linksDiv);
       grid.appendChild(card);
     });
+  }
+  
+  try {
+    const res = await fetch(`/d2l/api/lp/${lp_version}/enrollments/myenrollments/?orgUnitTypeId=3`);
+    const data = await res.json();
+
+    // Restrict to Student role in Classlist
+    const allowedRoles = "Student";
+
+   const { currentTerm, previousTerm, nextTerm, nextStart } = getCurrentAndPreviousTerm();
+   const allCourses = data.Items
+      // Filter by access (active AND between start & end dates) and role in Classlist
+      .filter(e => e.Access.CanAccess && allowedRoles.includes(e.Access.ClasslistRoleName))
+      .map(item => ({
+        name: item.OrgUnit.Name,
+        id: item.OrgUnit.Id,
+        url: item.OrgUnit.HomeUrl,
+        code: item.OrgUnit.Code,
+        lastAccess: item.Access.LastAccessed
+      }))
+        // Display courses in alphabetical order by course name
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+    // Filter by course codes for each semester
+    const currentCourses = allCourses.filter(course =>
+      (course.code || "")
+        .toUpperCase()
+        .trim()
+        .startsWith(currentTerm)
+    );
+
+    const previousCourses = allCourses.filter(course =>
+      (course.code || "")
+        .toUpperCase()
+        .trim()
+        .startsWith(previousTerm)
+    );
+
+    const nextCourses = allCourses.filter(course =>
+      (course.code || "")
+         .toUpperCase()
+         .trim()
+         .startsWith(nextTerm)
+    );
+
+      const currentLabel =
+  `Your <strong>${currentTerm}</strong> open courses:<br><br>`;
+
+const previousLabel =
+  `Your <strong>${previousTerm}</strong> courses that are still open:<br><br>`;
+
+const nextLabel =
+  `<strong>${nextTerm}</strong> courses officially open on <strong>${nextStart.toLocaleDateString("en-US", {
+     month: "long",
+     day: "numeric",
+     year: "numeric"
+   })}</strong>. Some instructors may open courses earlier.  Your <strong>${nextTerm}</strong> courses that are already open:<br><br>`;
+
+ heading.innerHTML = `
+  <div class="tablist" role="tablist" aria-label="Semester selection">
+    
+    <button id="previousTab"
+      class="semester-tab"
+      role="tab"
+      aria-controls="course-grid"
+      data-key="previous"
+      aria-selected="false"
+      tabindex="-1">
+      Last Semester (${previousTerm})
+    </button>
+
+    <button id="currentTab"
+      class="semester-tab"
+      role="tab"
+      aria-controls="course-grid"
+      data-key="current"
+      aria-selected="true"
+      tabindex="0">
+      This Semester (${currentTerm})
+    </button>
+    
+    <button id="nextTab"
+      class="semester-tab"
+      role="tab"
+      aria-controls="course-grid"
+      data-key="next"
+      aria-selected="false"
+      tabindex="-1">
+      Next Semester (${nextTerm})
+    </button>
+
+  </div>
+
+  <div id="semesterLabel"></div>
+`;
+
+const TAB_MAP = {
+  previous: {
+    courses: previousCourses,
+    label: previousLabel
+  },
+  current: {
+    courses: currentCourses,
+    label: currentLabel
+  },
+  next: {
+    courses: nextCourses,
+    label: nextLabel
+  }
+};
+
+const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+
+function activateTabByKey(key, { focus = true } = {}) {
+  tabs.forEach(tab => {
+    const isActive = tab.dataset.key === key;
+
+    tab.setAttribute("aria-selected", isActive);
+    tab.tabIndex = isActive ? 0 : -1;
+
+    if (isActive) {
+      grid.setAttribute(
+        "aria-labelledby",
+        tab.id
+      );
+
+      if (focus) tab.focus();
+    }
+  });
+
+  const { courses, label } = TAB_MAP[key];
+  renderCourses(courses, label);
+}
+
+tabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    activateTabByKey(tab.dataset.key);
+  });
+});
+
+tabs.forEach((tab, index) => {
+  tab.addEventListener("keydown", (e) => {
+
+    const currentIndex = tabs.indexOf(tab);
+
+    let newIndex = null;
+
+    switch (e.key) {
+      case "ArrowRight":
+        newIndex = (currentIndex + 1) % tabs.length;
+        break;
+
+      case "ArrowLeft":
+        newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+
+      case "Home":
+        newIndex = 0;
+        break;
+
+      case "End":
+        newIndex = tabs.length - 1;
+        break;
+
+      case "Enter":
+      case " ":
+        activateTabByKey(tab.dataset.key);
+        e.preventDefault();
+        return;
+    }
+
+    if (newIndex !== null) {
+      e.preventDefault();
+      tabs[newIndex].focus();
+    }
+  });
+});
+
+activateTabByKey("current", { focus: false });
+document.getElementById("currentTab").tabIndex = 0;
+document.getElementById("previousTab").tabIndex = -1;
+document.getElementById("nextTab").tabIndex = -1;
 
   } catch (err) {
     console.error(err);
