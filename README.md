@@ -4,15 +4,15 @@ Custom widgets using API calls in JavaScript to help instructors with designing/
 
 ## Students: Current Semester Courses Widget
 
-This widget is designed for the main D2L homepage rather than an individual course, based on the Student role at the organization level. The widget lists the student's active and open (within the start and end dates) semester's courses with direct links to each course's homepage, content, assignments, and gradebook as well as when the student last accessed the course. Semester start dates need to be updated in the code and the filters for semesters are based on the course code.
+This widget is designed for the main D2L homepage rather than an individual course, based on the Student role at the organization level. The widget lists the student's open (active and within the start and end dates) semester courses - for last, this, and next semester - with direct links to each course's homepage, content, assignments, and gradebook as well as when the student last accessed the course. Semester start dates need to be updated in the code and the filters for semesters are based on the course code.
 
-<img src="https://jenniferlynnwagner.com/img/widgets/semester-courses.jpg" width="600px" alt="Semester courses widget for student D2L homepage">
+<img src="https://jenniferlynnwagner.com/img/widgets/3semester-courses.jpg" width="600px" alt="Semester courses widget for student D2L homepage">
 
 Add a custom widget to your organization's D2L homepage and check the box to Render in iFrame before pasting in the HTML code for the content of the widget in the source code editor.
 
 ## Instructors: Course Reminders Widget
 
-Reminders that help to ensure the course is ready for students before the semester begins. The widget displays important information about the course in one location with suggested actions for improvement. The code checks for course status, start/end dates, syllabus in Content, long descriptions in Content, video files uploaded to Manage Files, and grade schemes that include a 4.0 GPA scale. [[Watch the video on this widget created for D2L Fusion 2025](https://youtu.be/VpwnxK9M2yw?si=tAR1Qxk7DQL2FMMK).]
+Reminders that help to ensure the course is ready for students before the semester begins. The widget displays important information about the course in one location with suggested actions for improvement. The code checks for course status, start/end dates, syllabus in Content, long descriptions in Content, video files uploaded to Manage Files, and grade schemes that include a 4.0 GPA scale.
 
 <img src="https://jenniferlynnwagner.com/img/widgets/reminders.png" width="400" alt="Course Reminders widget">
 
