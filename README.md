@@ -1,14 +1,20 @@
 ## Custom Homepage Widgets for D2L Brightspace
 
-Custom widgets using API calls in JavaScript to help instructors with designing/reviewing courses and downloading course data. A widget is also available for students that allows easier and direct access to frequently used tools within each active course.
+Custom widgets using API calls in JavaScript to help instructors with designing/reviewing courses and downloading course data. A widget is also available for students that allows easier and direct access to frequently used tools within each active course and the current final grade. Alternatively, students can paste code directly into the browser console to see their final grades for all courses.
 
-## Students: Current Semester Courses Widget
+## Students: Current Semester Courses Widgets
 
-This widget is designed for the main D2L homepage rather than an individual course, based on the Student role at the organization level. The widget lists the student's open (active and within the start and end dates) semester courses - for last, this, and next semester - with direct links to each course's homepage, content, assignments, and gradebook as well as when the student last accessed the course. Semester start dates need to be updated in the code and the filters for semesters are based on the course code.
+These widgets are designed for the main D2L homepage rather than an individual course, based on the Student/Learner role at the organization level. The widget lists the student's open (active and within the start and end dates) semester courses - for last, this, and next semester - with direct links to each course's homepage, content, assignments, and gradebook as well as when the student last accessed the course. Semester start dates need to be updated in the code and the filters for semesters are based on the course code. 
 
 <img src="https://jenniferlynnwagner.com/img/widgets/3semester-courses.jpg" width="600px" alt="Semester courses widget for student D2L homepage">
 
+The semester and non-credit courses version also includes another button for non-credit courses (such as communities or professional development); sorting options of alphabetical, oldest access and recent access; and the current final grade under the gradebook link.
+
 Add a custom widget to your organization's D2L homepage and check the box to Render in iFrame before pasting in the HTML code for the content of the widget in the source code editor.
+
+## Students: Current Final Grades in Console
+
+Students can paste this code directly into the browser console to display their final grades for all courses.
 
 ## Instructors: Course Reminders Widget
 
