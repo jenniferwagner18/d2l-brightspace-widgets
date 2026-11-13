@@ -1,4 +1,4 @@
-// includes both semester (for-credit) and non-credit courses with sort options
+// Includes both semester (for-credit) and non-credit courses, as well as displays current final grade for each course
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,10 +84,10 @@
   <div class="secondary-row">
     <div style="flex-grow: 1; min-width: 200px;">
       <button id="nonCreditTab" class="widget-btn" data-key="noncredit" aria-pressed="false">
-        📚 Non-Credit & Dev Courses
+        Non-Credit &amp; Dev Courses
       </button>
     </div>
-    
+
     <div class="sort-container">
       <strong>Sort by:</strong>
       <button id="sortAlpha" class="sort-btn" aria-pressed="false" data-sort="alpha">Alphabetical</button>
@@ -106,38 +106,17 @@
 <p style="padding-top:20px;">
   <em>
     Contact your instructors during the first week of the semester if your expected courses are not listed. Not all courses at MSU use D2L. The My Courses widget below includes all of your upcoming D2L courses as well as start and end dates.
+    The grade shown on each course card is the current grade your instructor has released and may not be final. "Not yet released" means no grade is available to you yet.
   </em>
 </p>
 
 <script>
 (async () => {
-  // Look up the latest LP API version from Brightspace
-async function getLatestVersion(productCode) {
-  const response = await fetch(`/d2l/api/${productCode}/versions/`);
+  // ===== SETTINGS =====
+  const ALLOWED_ROLES = ["Student", "Learner"]; // Classlist role names
 
-  if (!response.ok) {
-    throw new Error(`Could not load ${productCode.toUpperCase()} versions (HTTP ${response.status}).`);
-  }
-
-  const data = await response.json();
-  const entry = Array.isArray(data)
-    ? data.find(v => v.ProductCode === productCode)
-    : data;
-
-  if (!entry || !entry.LatestVersion) {
-    throw new Error(`No LatestVersion found for ${productCode.toUpperCase()}.`);
-  }
-
-  return entry.LatestVersion;
-}
-  
-  const grid = document.getElementById("course-grid");
-
-  // Fetch saved preferences from localStorage or use system defaults
-  let currentActiveKey = localStorage.getItem("msu_widget_filter") || "current";
-  let currentSortMethod = localStorage.getItem("msu_widget_sort") || "alpha";
-
-  // academic calendar dates
+  // Update every year according to the academic calendar: [month, day] of each term start.
+  // SS = Spring, US = Summer, FS = Fall
   const semesterStartDates = {
     2026: { SS: [1,11], US: [5,11], FS: [8,31] },
     2027: { SS: [1,19], US: [5,17], FS: [8,20] },
@@ -145,46 +124,147 @@ async function getLatestVersion(productCode) {
     2029: { SS: [1,16], US: [5,14], FS: [8,27] }
   };
 
+  // Fallbacks, replaced by the latest versions below
+  let lp_version = "1.49";
+  let le_version = "1.82";
+  // ====================
+
+  // ----- Safe localStorage helpers (storage can be blocked by browser privacy settings) -----
+  function safeGet(key, fallback) {
+    try {
+      return localStorage.getItem(key) || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function safeSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      // Ignore: preferences just won't be remembered
+    }
+  }
+
+  // ----- API helpers -----
+  // Look up the latest API version from Brightspace
+  async function getLatestVersion(productCode) {
+    const response = await fetch(`/d2l/api/${productCode}/versions/`);
+
+    if (!response.ok) {
+      throw new Error(`Could not load ${productCode.toUpperCase()} versions (HTTP ${response.status}).`);
+    }
+
+    const data = await response.json();
+    const entry = Array.isArray(data)
+      ? data.find(v => v.ProductCode === productCode)
+      : data;
+
+    if (!entry || !entry.LatestVersion) {
+      throw new Error(`No LatestVersion found for ${productCode.toUpperCase()}.`);
+    }
+
+    return entry.LatestVersion;
+  }
+
+  // Load every page of the student's enrollments
+  async function getAllEnrollments() {
+    const baseUrl = `/d2l/api/lp/${lp_version}/enrollments/myenrollments/?orgUnitTypeId=3`;
+    let items = [];
+    let url = baseUrl;
+    let pages = 0;
+
+    while (url && pages < 50) { // page cap guards against an endless loop
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Could not load enrollments (HTTP ${res.status}).`);
+      }
+      const page = await res.json();
+      items = items.concat(page.Items || []);
+      pages++;
+
+      url = page.PagingInfo && page.PagingInfo.HasMoreItems && page.PagingInfo.Bookmark
+        ? `${baseUrl}&bookmark=${encodeURIComponent(page.PagingInfo.Bookmark)}`
+        : null;
+    }
+
+    return items;
+  }
+
+  // Fetch (and cache) a student's released final grade for one course
+  const gradeCache = {};
+  function getFinalGrade(courseId) {
+    if (!gradeCache[courseId]) {
+      gradeCache[courseId] = fetch(
+        `/d2l/api/le/${le_version}/${courseId}/grades/final/values/myGradeValue`
+      )
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => (d && d.DisplayedGrade) || null)
+        .catch(() => null);
+    }
+    return gradeCache[courseId];
+  }
+
+  const grid = document.getElementById("course-grid");
+
+  // Fetch saved preferences or use defaults
+  let currentActiveKey = safeGet("msu_widget_filter", "current");
+  let currentSortMethod = safeGet("msu_widget_sort", "alpha");
+  if (!["alpha", "oldest", "newest"].includes(currentSortMethod)) currentSortMethod = "alpha";
+
+  // ----- Term logic -----
+  // Returns the instant when midnight Eastern Time begins on the given date.
+  // Midnight ET is 04:00 UTC during daylight time and 05:00 UTC during standard time.
   function getETStartDate(year, monthDay) {
     const [month, day] = monthDay;
-    return new Date(
-      new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/New_York",
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-      }).format(new Date(year, month - 1, day, 0, 0, 0))
-    );
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      day: "numeric",
+      hour: "numeric",
+      hourCycle: "h23"
+    });
+
+    for (const utcHour of [4, 5]) {
+      const candidate = new Date(Date.UTC(year, month - 1, day, utcHour, 0, 0));
+      const parts = formatter.formatToParts(candidate);
+      const hour = Number(parts.find(p => p.type === "hour").value) % 24; // some browsers report 24 for midnight
+      const etDay = Number(parts.find(p => p.type === "day").value);
+      if (hour === 0 && etDay === day) return candidate;
+    }
+
+    // Fallback (should not be reached): assume standard time
+    return new Date(Date.UTC(year, month - 1, day, 5, 0, 0));
   }
 
   function getCurrentTermAndNext() {
-    const todayUTC = new Date();
-    let year = todayUTC.getUTCFullYear();
+    const now = new Date();
+    let year = now.getUTCFullYear();
 
     if (!semesterStartDates[year]) {
-      year = Math.max(...Object.keys(semesterStartDates).map(y => parseInt(y)));
+      year = Math.max(...Object.keys(semesterStartDates).map(y => parseInt(y, 10)));
     }
 
-    const { SS, US, FS } = semesterStartDates[year];
-    const ssStart = getETStartDate(year, SS);
+    const { US, FS } = semesterStartDates[year];
     const usStart = getETStartDate(year, US);
     const fsStart = getETStartDate(year, FS);
 
     let currentTerm, nextTerm, nextStart;
 
-    if (todayUTC < usStart) {
+    if (now < usStart) {
       currentTerm = `SS${year.toString().slice(-2)}`;
       nextTerm = `US${year.toString().slice(-2)}`;
       nextStart = usStart;
-    } else if (todayUTC < fsStart) {
+    } else if (now < fsStart) {
       currentTerm = `US${year.toString().slice(-2)}`;
       nextTerm = `FS${year.toString().slice(-2)}`;
       nextStart = fsStart;
     } else {
       currentTerm = `FS${year.toString().slice(-2)}`;
       const nextYear = year + 1;
-      const nextSS = semesterStartDates[nextYear] ? getETStartDate(nextYear, semesterStartDates[nextYear].SS) : null;
       nextTerm = `SS${nextYear.toString().slice(-2)}`;
-      nextStart = nextSS;
+      nextStart = semesterStartDates[nextYear]
+        ? getETStartDate(nextYear, semesterStartDates[nextYear].SS)
+        : null; // next year's dates haven't been added to the table yet
     }
     return { currentTerm, nextTerm, nextStart };
   }
@@ -192,7 +272,7 @@ async function getLatestVersion(productCode) {
   function getCurrentAndPreviousTerm() {
     const { currentTerm, nextTerm, nextStart } = getCurrentTermAndNext();
     const termPrefix = currentTerm.substring(0, 2);
-    const year = parseInt("20" + currentTerm.substring(2));
+    const year = parseInt("20" + currentTerm.substring(2), 10);
     let previousTerm;
 
     if (termPrefix === "US") previousTerm = `SS${currentTerm.substring(2)}`;
@@ -202,6 +282,7 @@ async function getLatestVersion(productCode) {
     return { currentTerm, previousTerm, nextTerm, nextStart };
   }
 
+  // ----- Display helpers -----
   function formatLastAccess(dateString) {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -233,13 +314,13 @@ async function getLatestVersion(productCode) {
         if (!a.lastAccess) return -1;
         if (!b.lastAccess) return 1;
         return new Date(a.lastAccess) - new Date(b.lastAccess);
-      } 
+      }
       else if (currentSortMethod === "newest") {
         if (!a.lastAccess && !b.lastAccess) return 0;
         if (!a.lastAccess) return 1;
         if (!b.lastAccess) return -1;
         return new Date(b.lastAccess) - new Date(a.lastAccess);
-      } 
+      }
       else {
         return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
       }
@@ -284,17 +365,40 @@ async function getLatestVersion(productCode) {
       });
 
       card.appendChild(linksDiv);
+
+      // Current grade after links
+      const gradeDiv = document.createElement("div");
+      gradeDiv.style = "margin-top: 0.6em; font-size: 0.9em; color: #333;";
+
+      const gradeIcon = document.createElement("span");
+      gradeIcon.setAttribute("aria-hidden", "true");
+      gradeIcon.textContent = "🎓";
+
+      const gradeValue = document.createElement("strong");
+      gradeValue.textContent = "Loading...";
+
+      gradeDiv.append(gradeIcon, " Current grade: ", gradeValue);
+      card.appendChild(gradeDiv);
+
+      getFinalGrade(course.id).then(grade => {
+        gradeValue.textContent = grade || "Not yet released";
+      });
+
       fragment.appendChild(card);
     });
 
     grid.appendChild(fragment);
   }
 
+  // ----- Main -----
   try {
-    const lp_version = await getLatestVersion("lp").catch(() => "1.49");
-    const res = await fetch(`/d2l/api/lp/${lp_version}/enrollments/myenrollments/?orgUnitTypeId=3`);
-    const data = await res.json();
-    const allowedRoles = ["Student", "Member"];
+    [lp_version, le_version] = await Promise.all([
+      getLatestVersion("lp").catch(() => lp_version),
+      getLatestVersion("le").catch(() => le_version)
+    ]);
+
+    const allItems = await getAllEnrollments();
+    const allowedRolesLower = ALLOWED_ROLES.map(r => r.toLowerCase());
 
     const { currentTerm, previousTerm, nextTerm, nextStart } = getCurrentAndPreviousTerm();
 
@@ -302,8 +406,11 @@ async function getLatestVersion(productCode) {
     document.getElementById("currentTab").textContent = `This Semester (${currentTerm})`;
     document.getElementById("nextTab").textContent = `Next Semester (${nextTerm})`;
 
-    const allCourses = data.Items
-      .filter(e => e.Access.CanAccess && allowedRoles.includes(e.Access.ClasslistRoleName))
+    const allCourses = allItems
+      .filter(e =>
+        e.Access.CanAccess &&
+        allowedRolesLower.includes((e.Access.ClasslistRoleName || "").toLowerCase())
+      )
       .map(item => ({
         name: item.OrgUnit.Name,
         id: item.OrgUnit.Id,
@@ -323,9 +430,13 @@ async function getLatestVersion(productCode) {
     const previousCourses = allCourses.filter(c => !nonCreditCourses.includes(c) && (c.code || "").toUpperCase().trim().startsWith(previousTerm));
     const nextCourses = allCourses.filter(c => !nonCreditCourses.includes(c) && (c.code || "").toUpperCase().trim().startsWith(nextTerm));
 
+    const nextDateText = nextStart
+      ? nextStart.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : "a date to be announced";
+
     const currentLabel = `Your <strong>${currentTerm}</strong> open courses:<br><br>`;
     const previousLabel = `Your <strong>${previousTerm}</strong> courses that are still open:<br><br>`;
-    const nextLabel = `<strong>${nextTerm}</strong> courses officially open on <strong>${nextStart.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</strong>. Some instructors may open courses earlier.  Your <strong>${nextTerm}</strong> courses that are already open:<br><br>`;
+    const nextLabel = `<strong>${nextTerm}</strong> courses officially open on <strong>${nextDateText}</strong>. Some instructors may open courses earlier.  Your <strong>${nextTerm}</strong> courses that are already open:<br><br>`;
     const nonCreditLabel = `Your <strong>Development, Community, and Professional Development</strong> courses:<br><br>`;
 
     const TAB_MAP = {
@@ -335,13 +446,20 @@ async function getLatestVersion(productCode) {
       noncredit: { courses: nonCreditCourses, label: nonCreditLabel }
     };
 
+    // Ignore a saved filter that no longer exists
+    if (!TAB_MAP[currentActiveKey]) currentActiveKey = "current";
+
     const filterButtons = document.querySelectorAll(".widget-btn");
+    const sortButtons = document.querySelectorAll(".sort-btn");
+
+    function updateSortButtons() {
+      sortButtons.forEach(b => b.setAttribute("aria-pressed", b.dataset.sort === currentSortMethod));
+    }
 
     function activateFilterByKey(key) {
       currentActiveKey = key;
-      // Save filter key to localStorage
-      localStorage.setItem("msu_widget_filter", key);
-      
+      safeSet("msu_widget_filter", key);
+
       filterButtons.forEach(btn => {
         btn.setAttribute("aria-pressed", btn.dataset.key === key);
       });
@@ -349,28 +467,25 @@ async function getLatestVersion(productCode) {
       renderCourses(courses, label);
     }
 
-    filterButtons.forEach(btn => {
-      btn.addEventListener("click", () => activateFilterByKey(btn.dataset.key));
-    });
-
-    const sortButtons = document.querySelectorAll(".sort-btn");
-    
     function activateSortMethod(method) {
       currentSortMethod = method;
-      // Save sort method to localStorage
-      localStorage.setItem("msu_widget_sort", method);
-      
-      sortButtons.forEach(b => b.setAttribute("aria-pressed", b.dataset.sort === method));
+      safeSet("msu_widget_sort", method);
+
+      updateSortButtons();
       const { courses, label } = TAB_MAP[currentActiveKey];
       renderCourses(courses, label);
     }
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener("click", () => activateFilterByKey(btn.dataset.key));
+    });
 
     sortButtons.forEach(btn => {
       btn.addEventListener("click", () => activateSortMethod(btn.dataset.sort));
     });
 
-    // Run the initial setups reflecting either local storage or defaults
-    activateSortMethod(currentSortMethod);
+    // Initial setup: highlight the saved sort button, then render once
+    updateSortButtons();
     activateFilterByKey(currentActiveKey);
 
   } catch (err) {
