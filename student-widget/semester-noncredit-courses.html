@@ -111,7 +111,26 @@
 
 <script>
 (async () => {
-  const lp_version = "1.49";
+  // Look up the latest LP API version from Brightspace
+async function getLatestVersion(productCode) {
+  const response = await fetch(`/d2l/api/${productCode}/versions/`);
+
+  if (!response.ok) {
+    throw new Error(`Could not load ${productCode.toUpperCase()} versions (HTTP ${response.status}).`);
+  }
+
+  const data = await response.json();
+  const entry = Array.isArray(data)
+    ? data.find(v => v.ProductCode === productCode)
+    : data;
+
+  if (!entry || !entry.LatestVersion) {
+    throw new Error(`No LatestVersion found for ${productCode.toUpperCase()}.`);
+  }
+
+  return entry.LatestVersion;
+}
+  
   const grid = document.getElementById("course-grid");
 
   // Fetch saved preferences from localStorage or use system defaults
@@ -272,6 +291,7 @@
   }
 
   try {
+    const lp_version = await getLatestVersion("lp").catch(() => "1.49");
     const res = await fetch(`/d2l/api/lp/${lp_version}/enrollments/myenrollments/?orgUnitTypeId=3`);
     const data = await res.json();
     const allowedRoles = ["Student", "Member"];
